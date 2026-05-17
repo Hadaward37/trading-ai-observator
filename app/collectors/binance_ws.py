@@ -11,11 +11,23 @@ UTC = datetime.timezone.utc
 import websockets
 from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
 
+from typing import Awaitable, Callable
+
 from app.config import settings
 from app.storage.database import save_trade
 from app.utils.logger import get_logger
 
 log = get_logger(__name__)
+
+# Optional pipeline callback set by main.py — called with every confirmed trade.
+# Signature: async fn(symbol, price, qty, side, timestamp) -> None
+_pipeline_cb: Optional[Callable[..., Awaitable[None]]] = None
+
+
+def set_pipeline_callback(cb: Callable[..., Awaitable[None]]) -> None:
+    """Register the downstream pipeline entry point (CandleEngine.on_trade)."""
+    global _pipeline_cb
+    _pipeline_cb = cb
 
 
 @dataclass
@@ -81,6 +93,18 @@ async def _process_message(raw: str) -> None:
 
         stats.total_trades += 1
         stats.last_trade_at = datetime.datetime.now(UTC)
+
+        if _pipeline_cb is not None:
+            try:
+                await _pipeline_cb(
+                    symbol=symbol,
+                    price=price,
+                    qty=quantity,
+                    side=side,
+                    timestamp=timestamp,
+                )
+            except Exception as exc:
+                log.warning("pipeline_callback_error", error=str(exc))
 
         if stats.total_trades % 100 == 0:
             log.info(

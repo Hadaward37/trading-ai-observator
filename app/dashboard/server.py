@@ -8,7 +8,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.config import settings
-from app.storage.database import get_recent_trades, get_trade_stats
+from app.storage.database import (
+    get_recent_candles,
+    get_recent_events,
+    get_recent_features,
+    get_recent_trades,
+    get_trade_stats,
+)
 from app.utils.logger import get_logger
 
 log = get_logger(__name__)
@@ -76,6 +82,66 @@ async def mt5_stats_endpoint() -> JSONResponse:
     except Exception as exc:
         log.error("mt5_stats_error", error=str(exc))
         raise HTTPException(status_code=500, detail="Failed to retrieve MT5 stats")
+
+
+@app.get("/candles/recent", tags=["Context Engine"])
+async def recent_candles(
+    symbol: Optional[str] = Query(None, description="Filter by symbol, e.g. BTCUSDT"),
+    limit: int = Query(60, ge=1, le=500, description="Number of candles to return"),
+) -> JSONResponse:
+    try:
+        candles = await get_recent_candles(symbol=symbol, limit=limit)
+        return JSONResponse({
+            "symbol": symbol,
+            "limit": limit,
+            "count": len(candles),
+            "candles": candles,
+        })
+    except Exception as exc:
+        log.error("candles_error", error=str(exc))
+        raise HTTPException(status_code=500, detail="Failed to retrieve candles")
+
+
+@app.get("/features/recent", tags=["Context Engine"])
+async def recent_features(
+    symbol: Optional[str] = Query(None, description="Filter by symbol"),
+    limit: int = Query(60, ge=1, le=500, description="Number of feature rows to return"),
+) -> JSONResponse:
+    try:
+        features = await get_recent_features(symbol=symbol, limit=limit)
+        return JSONResponse({
+            "symbol": symbol,
+            "limit": limit,
+            "count": len(features),
+            "features": features,
+        })
+    except Exception as exc:
+        log.error("features_error", error=str(exc))
+        raise HTTPException(status_code=500, detail="Failed to retrieve features")
+
+
+@app.get("/events/recent", tags=["Context Engine"])
+async def recent_events(
+    symbol: Optional[str] = Query(None, description="Filter by symbol"),
+    event_type: Optional[str] = Query(
+        None,
+        description="Filter by type: volatility_expansion | aggressive_buying | "
+                    "aggressive_selling | compression | exhaustion",
+    ),
+    limit: int = Query(50, ge=1, le=500, description="Number of events to return"),
+) -> JSONResponse:
+    try:
+        events = await get_recent_events(symbol=symbol, event_type=event_type, limit=limit)
+        return JSONResponse({
+            "symbol": symbol,
+            "event_type": event_type,
+            "limit": limit,
+            "count": len(events),
+            "events": events,
+        })
+    except Exception as exc:
+        log.error("events_error", error=str(exc))
+        raise HTTPException(status_code=500, detail="Failed to retrieve events")
 
 
 @app.get("/recent-trades", tags=["Market"])
