@@ -46,9 +46,9 @@ stats = CollectorStats()
 
 def _build_ws_url(symbols: List[str]) -> str:
     streams = "/".join(f"{s.lower()}@trade" for s in symbols)
-    if len(symbols) == 1:
-        return f"{settings.binance_ws_url}/{streams}"
-    return f"{settings.binance_ws_url}/stream?streams={streams}"
+    # # if len(symbols) == 1:
+        # # return f"{settings.binance_ws_url}/{streams}"
+    return f"wss://stream.binance.com:9443/stream?streams={streams}"
 
 
 async def _process_message(raw: str) -> None:
