@@ -1,0 +1,11 @@
+version: '3.8'
+services:
+  observator:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - MT5_ENABLED=false
+    volumes:
+      - ./data:/app/data
+    restart: always

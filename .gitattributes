@@ -1,0 +1,7 @@
+# Force LF line endings for all text files (critical for Docker/Linux)
+* text=auto eol=lf
+
+# Explicitly binary
+*.db binary
+*.pkl binary
+*.joblib binary
