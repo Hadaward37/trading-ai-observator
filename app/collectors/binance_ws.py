@@ -4,14 +4,12 @@ import asyncio
 import datetime
 import json
 from dataclasses import dataclass, field
-from typing import List, Optional
-
-UTC = datetime.timezone.utc
+from typing import Awaitable, Callable, List, Optional
 
 import websockets
 from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
 
-from typing import Awaitable, Callable
+UTC = datetime.timezone.utc
 
 from app.config import settings
 from app.storage.database import save_trade
